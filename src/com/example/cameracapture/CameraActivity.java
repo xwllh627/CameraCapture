@@ -102,6 +102,7 @@ public class CameraActivity extends Activity {
 					}
 				}
 				else if(isOpen==true){
+					
 					mCamera.stopPreview();
 					mCamera.setPreviewCallback(null);
 					mCamera.release();
@@ -110,10 +111,12 @@ public class CameraActivity extends Activity {
 					isOpen = false;
 				}else{
 					mCamera = getCamera();
-					mCamera.setPreviewCallback(new PreviewFrameCallBack());
-					mPreview.setCamera(mCamera);
-					Log.d("debug : ", "reconnect camera ok!!!");
-					isOpen = true;
+					if(mCamera!=null){
+						mCamera.setPreviewCallback(new PreviewFrameCallBack());
+						mPreview.setCamera(mCamera);
+						Log.d("debug : ", "reconnect camera ok!!!");
+						isOpen = true;
+					}
 				}
 			}
         	
@@ -139,16 +142,26 @@ public class CameraActivity extends Activity {
 				// TODO Auto-generated method stub
 					
 				if(isOpen){
-					isBack = isBack==true?false:true;
-					mCamera.stopPreview();
-					mCamera.setPreviewCallback(null);
-					mCamera.release();
-					mPreview.setCamera(null);
 					
-					mCamera = getCamera();
-					if(mCamera!=null){
-						mCamera.setPreviewCallback(new PreviewFrameCallBack());
-						mPreview.setCamera(mCamera);	
+					isBack = isBack==true?false:true;
+					Camera c = getCamera();
+					//if successly open camera
+					if(c!=null){
+						if(mCamera!=null){
+							mCamera.stopPreview();
+							mCamera.setPreviewCallback(null);
+							mCamera.release();
+							mPreview.setCamera(null);
+						}					
+					
+							mCamera = c;
+							mCamera.setPreviewCallback(new PreviewFrameCallBack());
+							mPreview.setCamera(mCamera);	
+						
+					}
+					else{
+						//can not open
+						isBack = isBack==true?false:true;
 					}
 				}
 			
@@ -180,25 +193,31 @@ public class CameraActivity extends Activity {
 	            
 	            Log.d("debug : ", "open camera ok!!!");
 	        }
-	        catch (Exception e){
+	        catch (Exception e){ 
 	            // Camera is not available (in use or does not exist)
 	        	Log.d("debug : ", "open camera error!!! " + e.getMessage());
 	        }
-    	}
+    	} 
     	else{
-    		int cameraNum = Camera.getNumberOfCameras(); 
-    		if(cameraNum>1){
-    			CameraInfo cinfo = new CameraInfo();
-    			for(int i =0; i< cameraNum;i++){ 
-    				Camera.getCameraInfo(i, cinfo);
-    				if(cinfo.facing == CameraInfo.CAMERA_FACING_FRONT){
-    					c = Camera.open(i);
-    					c.setDisplayOrientation(90); 
-    		            Parameters p = c.getParameters();
-    		            p.setPreviewSize(320, 240);
-    		            c.setParameters(p);
-    				}
-    			}
+    		//check api version, android 2.2 does not have the following api 
+    		String currentApiVersion = android.os.Build.VERSION.RELEASE;
+    		Log.d("debug running api : ", currentApiVersion+""); 
+    		
+    		if(!currentApiVersion.startsWith("1")&&!currentApiVersion.startsWith("2.1")&&!currentApiVersion.startsWith("2.2")){
+	    		int cameraNum = Camera.getNumberOfCameras(); 
+	    		if(cameraNum>1){
+	    			CameraInfo cinfo = new CameraInfo();
+	    			for(int i =0; i< cameraNum;i++){ 
+	    				Camera.getCameraInfo(i, cinfo);
+	    				if(cinfo.facing == CameraInfo.CAMERA_FACING_FRONT){
+	    					c = Camera.open(i);
+	    					c.setDisplayOrientation(90); 
+	    		            Parameters p = c.getParameters();
+	    		            p.setPreviewSize(320, 240);
+	    		            c.setParameters(p);
+	    				}
+	    			}
+	    		}
     		}
     	}
         return c; // returns null if camera is unavailable
