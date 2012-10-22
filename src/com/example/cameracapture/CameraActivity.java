@@ -1,13 +1,18 @@
 package com.example.cameracapture;
 
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.hardware.Camera;
+import android.hardware.Camera.CameraInfo;
+import android.hardware.Camera.Parameters;
+import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.util.Log;
 import android.view.Display;
@@ -28,13 +33,15 @@ import android.support.v4.app.NavUtils;
 public class CameraActivity extends Activity {
 	
 	private boolean isOpen;
-
+	
+	private boolean isBack = true;
+	
 	private Camera mCamera; 
 
     private CameraPreview mPreview; 
     
-    private SurfaceView remoteView; 
-    //private ImageView remoteView;
+    //private SurfaceView remoteView; 
+    private ImageView remoteView;
     
     private FrameLayout preview;
     
@@ -50,10 +57,11 @@ public class CameraActivity extends Activity {
         
         preview= (FrameLayout) findViewById(R.id.camera_preview); 
         
-        remoteView = (SurfaceView) findViewById(R.id.remote_preview);
+        remoteView = (ImageView) findViewById(R.id.remote_preview);
         
-        remoteView.getHolder().setType(SurfaceHolder.SURFACE_TYPE_GPU);
+        //remoteView.getHolder().setType(SurfaceHolder.SURFACE_TYPE_GPU);
         
+        Log.d("debug : ", "Create Activity");
         
         Display d = getWindowManager().getDefaultDisplay();
         height = d.getHeight();
@@ -83,30 +91,67 @@ public class CameraActivity extends Activity {
 				// TODO Auto-generated method stub
 				if(mCamera==null){
 					mCamera = getCamera(); 
-					mCamera.getParameters().set("orientation", "portrait");
-					mCamera.setPreviewCallback(new PreviewFrameCallBack());
-			        mCamera.setDisplayOrientation(90); 
-			        // 创建Preview view并将其设为activity中的内容			        
-			        mPreview = new CameraPreview(CameraActivity.this, mCamera);
-			        preview.addView(mPreview);
-			        isOpen = true;
-
-			        Log.d("debug : ", "start camera ok!!!");
+					if(mCamera!=null){
+				        // 创建Preview view并将其设为activity中的内容			        
+				        mPreview = new CameraPreview(CameraActivity.this, mCamera);
+				        preview.addView(mPreview);
+				        isOpen = true;
+				        mCamera.setPreviewCallback(new PreviewFrameCallBack());
+				        
+				        Log.d("debug : ", "start camera ok!!!");
+					}
 				}
 				else if(isOpen==true){
 					mCamera.stopPreview();
 					mCamera.setPreviewCallback(null);
 					mCamera.release();
+					mPreview.setCamera(null);
 					Log.d("debug : ", "close camera ok!!!");
 					isOpen = false;
 				}else{
 					mCamera = getCamera();
 					mCamera.setPreviewCallback(new PreviewFrameCallBack());
-					//mCamera.setDisplayOrientation(90);
 					mPreview.setCamera(mCamera);
 					Log.d("debug : ", "reconnect camera ok!!!");
 					isOpen = true;
 				}
+			}
+        	
+        });
+        
+        Button b2 = (Button) findViewById(R.id.button_toSecond);
+        b2.setOnClickListener(new OnClickListener(){
+
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				Intent itent = new Intent(CameraActivity.this,SecondActivity.class);
+				startActivity(itent);
+			}
+        	
+        });
+        
+        Button b3 = (Button)findViewById(R.id.button_changeView);
+        b3.setOnClickListener(new OnClickListener(){
+
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+					
+				if(isOpen){
+					isBack = isBack==true?false:true;
+					mCamera.stopPreview();
+					mCamera.setPreviewCallback(null);
+					mCamera.release();
+					mPreview.setCamera(null);
+					
+					mCamera = getCamera();
+					if(mCamera!=null){
+						mCamera.setPreviewCallback(new PreviewFrameCallBack());
+						mPreview.setCamera(mCamera);	
+					}
+				}
+			
 			}
         	
         });
@@ -120,14 +165,42 @@ public class CameraActivity extends Activity {
 
     private Camera getCamera(){
     	Camera c = null;
-        try {
-            c = Camera.open(); // attempt to get a Camera instance
-            Log.d("debug : ", "open camera ok!!!");
-        }
-        catch (Exception e){
-            // Camera is not available (in use or does not exist)
-        	Log.d("debug : ", "open camera error!!! " + e.getMessage());
-        }
+    	if(isBack){
+	        try {
+	            c = Camera.open(); // attempt to get a Camera instance
+	            c.setDisplayOrientation(90); 
+	            Parameters p = c.getParameters();
+	            p.setPreviewSize(320, 240);
+	            c.setParameters(p);
+	            List<Size> ss = p.getSupportedPreviewSizes();
+	            
+	            for(Size s : ss){
+	            	Log.d("debug size : ", s.width +":"+s.height);
+	            }
+	            
+	            Log.d("debug : ", "open camera ok!!!");
+	        }
+	        catch (Exception e){
+	            // Camera is not available (in use or does not exist)
+	        	Log.d("debug : ", "open camera error!!! " + e.getMessage());
+	        }
+    	}
+    	else{
+    		int cameraNum = Camera.getNumberOfCameras(); 
+    		if(cameraNum>1){
+    			CameraInfo cinfo = new CameraInfo();
+    			for(int i =0; i< cameraNum;i++){ 
+    				Camera.getCameraInfo(i, cinfo);
+    				if(cinfo.facing == CameraInfo.CAMERA_FACING_FRONT){
+    					c = Camera.open(i);
+    					c.setDisplayOrientation(90); 
+    		            Parameters p = c.getParameters();
+    		            p.setPreviewSize(320, 240);
+    		            c.setParameters(p);
+    				}
+    			}
+    		}
+    	}
         return c; // returns null if camera is unavailable
     }
     
@@ -136,12 +209,12 @@ public class CameraActivity extends Activity {
 		@Override
 		public void onPreviewFrame(byte[] data, Camera camera) {
 			// TODO Auto-generated method stub
-			if(isOpen){
+				Log.d("debug : ", "begin draw frame");
 				int w = camera.getParameters().getPreviewSize().width;
 				int h = camera.getParameters().getPreviewSize().height;
 				Log.d("debug : ", "begin draw frame");
 				drawRemote(data,w,h);
-			}
+			
 			
 		}
  
@@ -160,20 +233,41 @@ public class CameraActivity extends Activity {
     	Log.d("debug : ", "scaleWidth : " + scaleWidth);
     	Log.d("debug : ", "scaleHeight : " + scaleHeight);
     	
-    	Matrix matrix3 = new Matrix();
-    	matrix3.postScale(1, 1);
-        matrix3.setRotate(90);
-        Bitmap nbmp2 = Bitmap.createBitmap(bmp,
-        		0, 0, bmp.getWidth(),  bmp.getHeight(), matrix3, true);
-        
-        Log.d("debug : ", "Width2 : " + nbmp2.getWidth());
-    	Log.d("debug : ", "Height2 : " + nbmp2.getHeight());
+    	if(isBack){
     	
-    	if(bmp==null)
-    		Log.d("debug :", "created bmp is null!!!!");
+	    	Matrix matrix3 = new Matrix();
+	    	matrix3.postScale(1, 1);
+	        matrix3.setRotate(90);
+	        Bitmap nbmp2 = Bitmap.createBitmap(bmp,
+	        		0, 0, bmp.getWidth(),  bmp.getHeight(), matrix3, true);
+	        
+	        Log.d("debug : ", "Width2 : " + nbmp2.getWidth());
+	    	Log.d("debug : ", "Height2 : " + nbmp2.getHeight());
+	    	
+	    	if(bmp==null)
+	    		Log.d("debug :", "created bmp is null!!!!");
+	    	
+	    	remoteView.setImageBitmap(nbmp2);
+    	}
+    	else{
+    		Matrix matrix3 = new Matrix();
+	    	matrix3.postScale(1, 1);
+	        matrix3.setRotate(270);
+	        Bitmap nbmp2 = Bitmap.createBitmap(bmp,
+	        		0, 0, bmp.getWidth(),  bmp.getHeight(), matrix3, true);
+	        
+	        Log.d("debug : ", "Width2 : " + nbmp2.getWidth());
+	    	Log.d("debug : ", "Height2 : " + nbmp2.getHeight());
+	    	
+	    	if(bmp==null)
+	    		Log.d("debug :", "created bmp is null!!!!");
+	    	
+	    	remoteView.setImageBitmap(nbmp2);
+    		//remoteView.setImageBitmap(bmp);
+    	}
     	
     	//压缩图像
-    	Matrix matrix = new Matrix();
+    	/*Matrix matrix = new Matrix();
     	scaleWidth = ((float)this.width) / nbmp2.getWidth();
     	scaleHeight = ((float)this.height) / nbmp2.getHeight();
     	//matrix.setRotate(90);
@@ -182,21 +276,13 @@ public class CameraActivity extends Activity {
                 (int) nbmp2.getHeight(), matrix, true); 
     	
     	Log.d("debug : ", "Width3 : " + bitmap.getWidth());
-    	Log.d("debug : ", "Height3 : " + bitmap.getHeight());
-    	/*Bitmap bitmap = Bitmap.createBitmap(bmp, 0, 0, (int) width,
-                (int) height, matrix, true);*/
-    	
-    	/*Matrix matrix2 = new Matrix();
-    	matrix2.postScale(1, 1);
-        matrix2.setRotate(90);
-        Bitmap nbmp = Bitmap.createBitmap(bitmap,
-        		0, 0, bitmap.getWidth(),  bitmap.getHeight(), matrix2, true);*/
+    	Log.d("debug : ", "Height3 : " + bitmap.getHeight());*/
         
-        //remoteView.setImageBitmap(bitmap);
+        
     	
-    	Canvas canvas = this.remoteView.getHolder().lockCanvas();  
+    	/*Canvas canvas = this.remoteView.getHolder().lockCanvas();  
         canvas.drawBitmap(bitmap, 0, 0, null);  
-        remoteView.getHolder().unlockCanvasAndPost(canvas); 
+        remoteView.getHolder().unlockCanvasAndPost(canvas); */
     }
     
     public int[] decodeYUV420SP(byte[] yuv420sp, int width, int height) {  
@@ -238,7 +324,10 @@ public class CameraActivity extends Activity {
 	    	mCamera.stopPreview();
 	    	mCamera.setPreviewCallback(null);
     	}
-    	mCamera.release();
+    	if(mCamera!=null){
+	    	mCamera.release();
+	    	mPreview.setCamera(null);
+    	}
     	
     	Log.d("debug : ", "exit program!!");
     	super.onBackPressed();

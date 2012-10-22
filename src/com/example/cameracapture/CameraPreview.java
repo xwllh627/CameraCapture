@@ -29,52 +29,66 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 	public void surfaceChanged(SurfaceHolder holder, int format, int width,
 			int height) {
 		// TODO Auto-generated method stub
+		Log.d("debug surface change : ", "surface Change");
 		if(holder.getSurface()==null){
 			Log.d("debug : ", "no surface to change!!!");
 			return;
 		}
-		try{
-			c.stopPreview();
-		}catch(Exception e){
-			Log.d("debug : ", "stop preview error " + e.getMessage());
+		
+		if(c!=null){
+			try{
+				c.stopPreview();
+			}catch(Exception e){
+				Log.d("debug surface : ", "stop preview error " + e.getMessage());
+			}
+			try {
+				c.setPreviewDisplay(holder);
+				c.startPreview();
+				Log.d("debug surface change2 : ", "surface Change");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				Log.d("debug surface: ", "change preview error " + e.getMessage());
+			}
 		}
-		try {
-			c.setPreviewDisplay(holder);
-			c.startPreview();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			Log.d("debug : ", "change preview error " + e.getMessage());
-		}
+		
 	}
 
 	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
 		// TODO Auto-generated method stub
-		try{
-			c.setPreviewDisplay(holder);
-			c.startPreview();
-			Log.d("Debug : ", "start preview!!!");
-		}catch(Exception e){
-			Log.d("debug : ", "Error setting camera preview: " + e.getMessage()); 
+		Log.d("Debug surface create1: ", "start preview!!!");
+		if(c!=null){
+			try{
+				c.setPreviewDisplay(holder);
+				c.startPreview();
+				Log.d("Debug surface create2: ", "start preview!!!");
+			}catch(Exception e){
+				Log.d("debug surface create: ", "Error setting camera preview: " + e.getMessage()); 
+			}
 		}
 	}
 	
 	public void setCamera(Camera c){
 		this.c =c;
-		try {
-			c.setPreviewDisplay(holder);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		if(c!=null){
+			try {
+				Log.d("debug set Camera: ", "set camera"); 
+				c.setPreviewDisplay(holder);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			c.startPreview();
 		}
-		c.startPreview();
 	}
 
 	@Override
 	public void surfaceDestroyed(SurfaceHolder holder) {
 		// TODO Auto-generated method stub
-		c.release();
-		Log.d("debug : ", "release camera " );
+		//c.release();
+		if(c!=null)
+			c.stopPreview();
+		Log.d("debug surface destroy : ", "release camera " );
 		
 	}
 
