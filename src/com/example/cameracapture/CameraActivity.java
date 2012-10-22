@@ -142,11 +142,10 @@ public class CameraActivity extends Activity {
 				// TODO Auto-generated method stub
 					
 				if(isOpen){
-					
-					isBack = isBack==true?false:true;
-					Camera c = getCamera();
-					//if successly open camera
-					if(c!=null){
+					 
+					String currentApiVersion = android.os.Build.VERSION.RELEASE;
+					if(!currentApiVersion.startsWith("1")&&!currentApiVersion.startsWith("2.1")&&!currentApiVersion.startsWith("2.2"))	
+					{	isBack = isBack==true?false:true;
 						if(mCamera!=null){
 							mCamera.stopPreview();
 							mCamera.setPreviewCallback(null);
@@ -154,14 +153,9 @@ public class CameraActivity extends Activity {
 							mPreview.setCamera(null);
 						}					
 					
-							mCamera = c;
+							mCamera = getCamera();
 							mCamera.setPreviewCallback(new PreviewFrameCallBack());
 							mPreview.setCamera(mCamera);	
-						
-					}
-					else{
-						//can not open
-						isBack = isBack==true?false:true;
 					}
 				}
 			
@@ -215,6 +209,7 @@ public class CameraActivity extends Activity {
 	    		            Parameters p = c.getParameters();
 	    		            p.setPreviewSize(320, 240);
 	    		            c.setParameters(p);
+	    		            
 	    				}
 	    			}
 	    		}
