@@ -2,6 +2,8 @@ package com.example.cameracapture;
 
 import java.io.IOException;
 
+import com.example.cameracapture.CameraActivity.PreviewFrameCallBack;
+
 import android.content.Context;
 import android.hardware.Camera;
 import android.util.Log;
@@ -19,6 +21,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 	
 	public CameraPreview(Context context,Camera camera){
 		super(context);
+		Log.d("debug preview : ", "constructor");
 		c = camera;
 		holder = this.getHolder();
 		holder.addCallback(this);
@@ -28,7 +31,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 	@Override
 	public void surfaceChanged(SurfaceHolder holder, int format, int width,
 			int height) {
-		// TODO Auto-generated method stub
+		/*// TODO Auto-generated method stub
 		Log.d("debug surface change : ", "surface Change");
 		if(holder.getSurface()==null){
 			Log.d("debug : ", "no surface to change!!!");
@@ -44,24 +47,22 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 			try {
 				c.setPreviewDisplay(holder);
 				c.startPreview();
-				Log.d("debug surface change2 : ", "surface Change");
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				Log.d("debug surface: ", "change preview error " + e.getMessage());
 			}
-		}
+		}*/
 		
 	}
 
 	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
 		// TODO Auto-generated method stub
-		Log.d("Debug surface create1: ", "start preview!!!");
+		
 		if(c!=null){
+			Log.d("Debug surface create1: ", "start preview!!!");
 			try{
-				c.setPreviewDisplay(holder);
-				c.startPreview();
-				Log.d("Debug surface create2: ", "start preview!!!");
+				setCamera(c);
 			}catch(Exception e){
 				Log.d("debug surface create: ", "Error setting camera preview: " + e.getMessage()); 
 			}

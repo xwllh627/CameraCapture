@@ -83,21 +83,24 @@ public class CameraActivity extends Activity {
         p.height = height;
         preview.setLayoutParams(p);
         
+        mPreview = new CameraPreview(CameraActivity.this, null);				        
+        preview.addView(mPreview);
+        
         Button b1 = (Button) findViewById(R.id.button_preview);
         b1.setOnClickListener(new OnClickListener(){
 
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
-				if(mCamera==null){
+				if(mCamera==null||!isOpen){
 					mCamera = getCamera(); 
 					if(mCamera!=null){
-				        // 创建Preview view并将其设为activity中的内容			        
-				        mPreview = new CameraPreview(CameraActivity.this, mCamera);
-				        preview.addView(mPreview);
+				        // 创建Preview view并将其设为activity中的内容		
+						mCamera.setPreviewCallback(new PreviewFrameCallBack());
+						mPreview.setCamera(mCamera);
 				        isOpen = true;
-				        mCamera.setPreviewCallback(new PreviewFrameCallBack());
-				        
+				       // PreviewFrameCallBack pc = new PreviewFrameCallBack();
+				        				        
 				        Log.d("debug : ", "start camera ok!!!");
 					}
 				}
@@ -109,7 +112,7 @@ public class CameraActivity extends Activity {
 					mPreview.setCamera(null);
 					Log.d("debug : ", "close camera ok!!!");
 					isOpen = false;
-				}else{
+				}/*else{
 					mCamera = getCamera();
 					if(mCamera!=null){
 						mCamera.setPreviewCallback(new PreviewFrameCallBack());
@@ -117,7 +120,7 @@ public class CameraActivity extends Activity {
 						Log.d("debug : ", "reconnect camera ok!!!");
 						isOpen = true;
 					}
-				}
+				}*/
 			}
         	
         });
@@ -145,17 +148,21 @@ public class CameraActivity extends Activity {
 					 
 					String currentApiVersion = android.os.Build.VERSION.RELEASE;
 					if(!currentApiVersion.startsWith("1")&&!currentApiVersion.startsWith("2.1")&&!currentApiVersion.startsWith("2.2"))	
-					{	isBack = isBack==true?false:true;
-						if(mCamera!=null){
-							mCamera.stopPreview();
-							mCamera.setPreviewCallback(null);
-							mCamera.release();
-							mPreview.setCamera(null);
-						}					
-					
-							mCamera = getCamera();
-							mCamera.setPreviewCallback(new PreviewFrameCallBack());
-							mPreview.setCamera(mCamera);	
+					{	
+						int count = Camera.getNumberOfCameras();
+						if(count>1){
+							isBack = !isBack;
+							if(mCamera!=null){
+								mCamera.stopPreview();
+								mCamera.setPreviewCallback(null);
+								mCamera.release();
+								mPreview.setCamera(null);
+							}					
+						
+								mCamera = getCamera();
+								mCamera.setPreviewCallback(new PreviewFrameCallBack());
+								mPreview.setCamera(mCamera);
+						}
 					}
 				}
 			
@@ -179,11 +186,11 @@ public class CameraActivity extends Activity {
 	            Parameters p = c.getParameters();
 	            p.setPreviewSize(320, 240);
 	            c.setParameters(p);
-	            List<Size> ss = p.getSupportedPreviewSizes();
+	           /* List<Size> ss = p.getSupportedPreviewSizes();
 	            
 	            for(Size s : ss){
 	            	Log.d("debug size : ", s.width +":"+s.height);
-	            }
+	            }*/
 	            
 	            Log.d("debug : ", "open camera ok!!!");
 	        }
@@ -219,6 +226,11 @@ public class CameraActivity extends Activity {
     }
     
     class PreviewFrameCallBack implements Camera.PreviewCallback{
+    	
+    	public PreviewFrameCallBack(){
+    		super();
+    		Log.d("debug callback : ", "call back");    		
+    	}
 
 		@Override
 		public void onPreviewFrame(byte[] data, Camera camera) {
